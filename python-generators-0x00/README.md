@@ -2,7 +2,7 @@
 
 ## Project: Python Generators
 
-This project introduces advanced Python concepts by focusing on the use of generators to efficiently handle large datasets. It demonstrates how to seed a MySQL database and stream data from it in memory-efficient batches.
+This project introduces advanced Python concepts by focusing on the use of generators to efficiently handle large datasets. It demonstrates how to seed a MySQL database, stream data from it in memory-efficient batches and pages, and perform aggregations without loading all data into memory.
 
 ### Folder and File Structure
 
@@ -10,9 +10,9 @@ This project introduces advanced Python concepts by focusing on the use of gener
   - `seed.py`: A Python script to set up a MySQL database and insert data from a CSV file.
   - `0-stream_users.py`: A Python script containing a generator function that streams user data one row at a time.
   - `1-batch_processing.py`: A Python script with generator functions for fetching and processing data in memory-efficient batches.
-  - `0-main.py`: A main script to demonstrate the `seed.py` functionality.
-  - `1-main.py`: A main script to demonstrate the `0-stream_users.py` generator.
-  - `2-main.py`: A main script to demonstrate the `1-batch_processing.py` functionality.
+  - `2-lazy_paginate.py`: A Python script containing a generator function that fetches data in lazily loaded pages.
+  - `4-stream_ages.py`: A script that uses a generator to compute the average age of users without loading the entire dataset into memory.
+  - `0-main.py`, `1-main.py`, `2-main.py`, `3-main.py`: Main scripts to demonstrate the functionalities.
   - `user_data.csv`: A sample CSV file containing user data.
 
 ### Database Setup and Configuration
@@ -30,9 +30,9 @@ The `seed.py` script connects to a MySQL server. You will need to ensure MySQL i
     ```bash
     ./0-main.py
     ```
-3.  **Run the batch processing script**:
+3.  **Run the average age calculation script**:
     ```bash
-    ./2-main.py
+    ./4-stream_ages.py
     ```
 
-This will run the `batch_processing` generator in `1-batch_processing.py`, which fetches and processes users in batches of 50, and prints the filtered results.
+This will run the `calculate_average_age` function, which uses the `stream_user_ages` generator to compute and print the average age.
