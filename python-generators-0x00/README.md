@@ -8,6 +8,7 @@ This project introduces advanced Python concepts by focusing on the use of gener
 
 - `python-generators-0x00/`: The main project directory.
   - `seed.py`: A Python script containing functions to connect to a MySQL database, create a database and table, and insert data from a CSV file.
+  - `0-stream_users.py`: A Python script containing a generator function that streams user data from the database one row at a time.
   - `0-main.py`: The entry point for the program that demonstrates the use of the functions in `seed.py`.
   - `user_data.csv`: A sample CSV file containing user data.
 
@@ -23,10 +24,7 @@ The `seed.py` script connects to a MySQL server. You will need to ensure MySQL i
     ```
 2.  **Run the script**:
     ```bash
-    ./0-main.py
+    ./1-main.py
     ```
 
-This will connect to your MySQL server, create the `ALX_prodev` database and `user_data` table (if they don't exist), insert the data from `user_data.csv`, and then print the first 5 rows to verify the setup.
-
----
-**Note:** You must have a `user_data.csv` file in the same directory as `seed.py` for the data insertion to work.
+This will run the `0-stream_users.py` generator and print the first 6 rows of data, showcasing the memory-efficient streaming.
