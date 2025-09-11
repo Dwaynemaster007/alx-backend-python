@@ -61,18 +61,12 @@ async def fetch_concurrently():
     Executes multiple asynchronous database queries concurrently using asyncio.gather().
     """
     print("\n--- Starting concurrent database fetches ---")
-    # asyncio.gather runs the coroutines concurrently.
-    # It returns results in the order the coroutines were passed.
     
-    # Explicitly passing db_name for clarity
-    all_users_task = async_fetch_users(db_name='users.db')
-    older_users_task = async_fetch_older_users(age_threshold=40, db_name='users.db') # Explicitly passed db_name
-
-    # Assign names to tasks for clearer logging
-    all_users_task.__name__ = "FetchAllUsersTask"
-    older_users_task.__name__ = "FetchOlderUsersTask"
-
-    results = await asyncio.gather(all_users_task, older_users_task)
+    # Place coroutines directly into asyncio.gather()
+    results = await asyncio.gather(
+        async_fetch_users(),
+        async_fetch_older_users()
+    )
     
     all_users_result = results[0]
     older_users_result = results[1]
@@ -89,4 +83,4 @@ async def fetch_concurrently():
 
 # --- Run the concurrent fetch ---
 if __name__ == "__main__":
-    asyncio.run(fetch_concurrently())
+    asyncio
