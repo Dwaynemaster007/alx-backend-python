@@ -8,7 +8,8 @@ class User(AbstractUser):
     first_name = models.CharField(max_length=30, blank=False, null=False)
     last_name = models.CharField(max_length=150, blank=False, null=False)
     email = models.EmailField(unique=True, null=False, blank=False)
-    
+    # You do not need to define `password` as a field, Django's `AbstractUser`
+    # handles this automatically with a hashed password.
     # Resolving clashes for groups and user_permissions
     groups = models.ManyToManyField(
         Group,
