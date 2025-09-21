@@ -3,7 +3,7 @@
 """
 import unittest
 from parameterized import parameterized
-from .utils import access_nested_map # Use relative import to fix ModuleNotFoundError
+from .utils import access_nested_map
 
 class TestAccessNestedMap(unittest.TestCase):
     """Class to test access_nested_map function."""
@@ -17,12 +17,13 @@ class TestAccessNestedMap(unittest.TestCase):
         """Test that access_nested_map returns the expected output."""
         self.assertEqual(access_nested_map(nested_map, path), expected)
 
-    @parameterized.expand([ # Add the decorator here
-        ({}, ("a",)),
-        ({"a": 1}, ("a", "b")),
-    ])
-    def test_access_nested_map_exception(self, nested_map, path):
+    def test_access_nested_map_exception(self):
         """Test that access_nested_map raises a KeyError."""
-        with self.assertRaises(KeyError) as cm:
-            access_nested_map(nested_map, path)
-        self.assertEqual(str(cm.exception), f"'{path[-1]}'")
+        test_cases = [
+            ({}, ("a",), 'a'),
+            ({"a": 1}, ("a", "b"), 'b')
+        ]
+        for nested_map, path, expected_key in test_cases:
+            with self.assertRaises(KeyError) as cm:
+                access_nested_map(nested_map, path)
+            self.assertEqual(str(cm.exception), f"'{expected_key}'")
