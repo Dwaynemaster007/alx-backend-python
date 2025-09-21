@@ -1,3 +1,5 @@
+# test_utils.py
+
 #!/usr/bin/env python3
 """Module for testing utils.py
 """
@@ -17,12 +19,13 @@ class TestAccessNestedMap(unittest.TestCase):
         """Test that access_nested_map returns the expected output."""
         self.assertEqual(access_nested_map(nested_map, path), expected)
 
-    @parameterized.expand([
-        ({}, ("a",), KeyError),
-        ({"a": 1}, ("a", "b"), KeyError),
-    ])
-    def test_access_nested_map_exception(self, nested_map, path, expected_exception):
-        """Test that access_nested_map raises the expected exception."""
-        with self.assertRaises(expected_exception) as cm:
-            access_nested_map(nested_map, path)
-        self.assertEqual(str(cm.exception), str(path[-1]))
+    def test_access_nested_map_exception(self):
+        """Test that access_nested_map raises a KeyError."""
+        test_cases = [
+            ({}, ("a",), 'a'),
+            ({"a": 1}, ("a", "b"), 'b')
+        ]
+        for nested_map, path, expected_key in test_cases:
+            with self.assertRaises(KeyError) as cm:
+                access_nested_map(nested_map, path)
+            self.assertEqual(str(cm.exception), f"'{expected_key}'")
