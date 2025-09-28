@@ -6,17 +6,16 @@ from utils import access_nested_map, get_json, memoize
 
 class GithubOrgClient:
     """A GitHub organization client."""
-    ORG_URL = "https://api.github.com/orgs/{}"
+    ORG_URL = "https://api.github.com/orgs/{org}"
 
     def __init__(self, org_name: str) -> None:
         """Initialize with organization name."""
         self._org_name = org_name
 
-    @property
     @memoize
     def org(self) -> Dict:
         """Return memoized organization data."""
-        return get_json(self.ORG_URL.format(self._org_name))
+        return get_json(self.ORG_URL.format(org=self._org_name))
 
     @property
     def _public_repos_url(self) -> str:
@@ -43,7 +42,8 @@ class GithubOrgClient:
         """Check if a repo has the specified license."""
         assert license_key is not None, "license_key cannot be None"
         try:
-            has_license = access_nested_map(repo, ("license", "key")) == license_key
+            has_license = access_nested_map(repo, ("license", "key")) == \
+                license_key
         except KeyError:
             return False
         return has_license
