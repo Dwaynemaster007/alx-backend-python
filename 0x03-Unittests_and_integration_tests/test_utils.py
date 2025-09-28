@@ -19,7 +19,7 @@ class TestAccessNestedMap(unittest.TestCase):
         ({"a": {"b": 2}}, ("a", "b"), 2),
     ])
     def test_access_nested_map(self, nested_map, path, expected):
-        """Test access_nested_map returns expected results for various inputs."""
+        """Tests access_nested_map returns expected results for various inputs."""
         self.assertEqual(access_nested_map(nested_map, path), expected)
 
     @parameterized.expand([
@@ -42,7 +42,7 @@ class TestGetJson(unittest.TestCase):
     ])
     @patch('utils.requests.get')
     def test_get_json(self, test_url, test_payload, mock_get):
-        """Test get_json returns expected payload and calls requests.get once."""
+        """Tests get_json returns expected payload, calls requests.get once."""
         # Configure the mock to return a Mock object with json method
         mock_response = Mock()
         mock_response.json.return_value = test_payload
@@ -62,7 +62,7 @@ class TestMemoize(unittest.TestCase):
     """Test class for memoize decorator."""
 
     def test_memoize(self):
-        """Test that memoize decorator caches results and calls method only once."""
+        """Test that memoize decorator caches results, calls method only once."""
 
         class TestClass:
             def a_method(self):
@@ -75,7 +75,7 @@ class TestMemoize(unittest.TestCase):
         # Create instance of TestClass
         test_instance = TestClass()
 
-        # Mock the a_method
+        # Mock the a_method, splitting the line to satisfy E501
         with patch.object(test_instance, 'a_method', return_value=42) as \
                 mock_method:
             # Call a_property twice
@@ -92,4 +92,4 @@ class TestMemoize(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-# [Ensure there is one final blank line after this comment or the last line of code]
+    
