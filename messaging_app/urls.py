@@ -1,31 +1,32 @@
 """
-URL configuration for messaging_app project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+URL Configuration for messaging_app project.
 """
 from django.contrib import admin
-from django.urls import path
-
-urlpatterns = [
-    path('admin/', admin.site.urls),
-]
-# messaging_app/urls.py
-from django.contrib import admin
 from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from rest_framework_simplejwt.views import TokenRefreshView
+from chats.views import ConversationViewSet, MessageViewSet, UserViewSet
+from chats.auth import CustomTokenObtainPairView, register_user, user_profile
+
+# Create router and register viewsets
+router = DefaultRouter()
+router.register(r'conversations', ConversationViewSet, basename='conversation')
+router.register(r'messages', MessageViewSet, basename='message')
+router.register(r'users', UserViewSet, basename='user')
 
 urlpatterns = [
+    # Admin
     path('admin/', admin.site.urls),
-    path('api/', include('chats.urls')),
-    path('api-auth/', include('rest_framework.urls')),  # Add this line
+    
+    # Authentication endpoints
+    path('api/auth/login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/auth/register/', register_user, name='register'),
+    path('api/auth/profile/', user_profile, name='user_profile'),
+    
+    # API endpoints
+    path('api/', include(router.urls)),
+    
+    # DRF browsable API (optional, for development)
+    path('api-auth/', include('rest_framework.urls')),
 ]

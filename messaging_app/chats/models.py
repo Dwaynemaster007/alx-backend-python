@@ -1,65 +1,55 @@
-# chats/models.py
+"""
+Models for the messaging app.
+"""
 from django.db import models
-from django.contrib.auth.models import AbstractUser, Group, Permission
+from django.contrib.auth.models import User
 import uuid
 
-class User(AbstractUser):
-    user_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    first_name = models.CharField(max_length=30, blank=False, null=False)
-    last_name = models.CharField(max_length=150, blank=False, null=False)
-    email = models.EmailField(unique=True, null=False, blank=False)
-    # You do not need to define `password` as a field, Django's `AbstractUser`
-    # handles this automatically with a hashed password.
-    # Resolving clashes for groups and user_permissions
-    groups = models.ManyToManyField(
-        Group,
-        related_name='chats_user_set',
-        blank=True,
-        help_text='The groups this user belongs to.',
-        verbose_name='groups',
-    )
-    user_permissions = models.ManyToManyField(
-        Permission,
-        related_name='chats_user_permissions',
-        blank=True,
-        help_text='Specific permissions for this user.',
-        verbose_name='user permissions',
-    )
-    
-    phone_number = models.CharField(max_length=20, null=True, blank=True)
-    role = models.CharField(
-        max_length=10,
-        choices=[
-            ('guest', 'Guest'),
-            ('host', 'Host'),
-            ('admin', 'Admin')
-        ],
-        default='guest',
-    )
-    
-    # Use email as the primary login field
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name', 'last_name']
-    
-    def __str__(self):
-        return self.email
 
-# The missing Conversation model and fields
 class Conversation(models.Model):
-    conversation_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    """Model representing a conversation between users."""
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     participants = models.ManyToManyField(User, related_name='conversations')
     created_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return f"Conversation {self.conversation_id}"
+    updated_at = models.DateTimeField(auto_now=True)
 
-# The missing Message model and fields
-class Message(models.Model):
-    message_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='messages')
-    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='messages')
-    message_body = models.TextField()
-    sent_at = models.DateTimeField(auto_now_add=True)
-    
+    class Meta:
+        ordering = ['-updated_at']
+
     def __str__(self):
-        return f"Message from {self.sender.email} in {self.conversation}"
+        participant_names = ", ".join([user.username for user in self.participants.all()[:3]])
+        if self.participants.count() > 3:
+            participant_names += f" and {self.participants.count() - 3} others"
+        return f"Conversation with {participant_names}"
+
+
+class Message(models.Model):
+    """Model representing a message in a conversation."""
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    conversation = models.ForeignKey(
+        Conversation, 
+        on_delete=models.CASCADE, 
+        related_name='messages'
+    )
+    sender = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='sent_messages'
+    )
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_read = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Message from {self.sender.username}: {self.content[:50]}..."
+
+    def save(self, *args, **kwargs):
+        """Update conversation's updated_at when saving message."""
+        super().save(*args, **kwargs)
+        self.conversation.save()  # This will update the updated_at field
