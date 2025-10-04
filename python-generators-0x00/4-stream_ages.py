@@ -1,55 +1,61 @@
 #!/usr/bin/python3
 """
-A script to demonstrate memory-efficient aggregation using a generator.
+This module demonstrates memory-efficient aggregation by using a generator
+to calculate the average age of all users in a database without
+loading the entire dataset into memory.
 """
-import mysql.connector
-from seed import connect_to_prodev
-import sys
+import seed  # Import the seed module for database connection
 
 def stream_user_ages():
     """
-    A generator that streams user ages from the database one by one.
-
-    Yields:
-        int: The age of a user.
+    A generator that connects to the database and yields the age
+    of each user, one by one.
     """
     connection = None
+    cursor = None
     try:
-        connection = connect_to_prodev()
+        connection = seed.connect_to_prodev()
         if not connection:
-            print("Failed to connect to the database.", file=sys.stderr)
             return
 
-        cursor = connection.cursor(dictionary=True)
+        cursor = connection.cursor()
+        # We only need the 'age' column, which is more efficient
         cursor.execute("SELECT age FROM user_data")
 
+        # This is the first loop, iterating through the cursor
         for row in cursor:
-            yield row['age']
+            yield row[0]  # Yield only the age value (the first column)
 
-    except mysql.connector.Error as err:
-        print(f"Database error: {err}", file=sys.stderr)
+    except Exception as e:
+        print(f"An error occurred while streaming ages: {e}")
     finally:
-        if 'cursor' in locals() and cursor:
+        if cursor:
             cursor.close()
-        if connection:
+        if connection and connection.is_connected():
             connection.close()
+
 
 def calculate_average_age():
     """
-    Calculates the average age of users without loading all data into memory.
+    Consumes the stream_user_ages generator to calculate the average
+    age in a memory-efficient manner.
     """
     total_age = 0
-    count = 0
-    
+    user_count = 0
+
+    # This is the second loop, consuming the generator
     for age in stream_user_ages():
         total_age += age
-        count += 1
+        user_count += 1
     
-    if count > 0:
-        average_age = total_age / count
-        print(f"Average age of users: {average_age}")
+    if user_count == 0:
+        average_age = 0
     else:
-        print("No users found.")
+        average_age = total_age / user_count
 
-if __name__ == '__main__':
+    print(f"Average age of users: {average_age:.2f}")
+
+
+if __name__ == "__main__":
+    # This block makes the script runnable from the command line
     calculate_average_age()

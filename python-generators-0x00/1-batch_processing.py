@@ -1,62 +1,63 @@
 #!/usr/bin/python3
 """
-A script to demonstrate batch processing of a large database using generators.
+This module contains functions to stream and process user data in batches
+for improved performance when handling large datasets.
 """
-import mysql.connector
-from seed import connect_to_prodev
-import sys
+import seed  # Import the seed module for database connection
 
-def stream_users_in_batches(batch_size):
+def stream_users_in_batches(batch_size=50):
     """
-    Streams rows from the user_data table in batches.
+    A generator function that connects to the database and yields
+    batches of user rows.
 
     Args:
         batch_size (int): The number of rows to fetch in each batch.
 
     Yields:
-        list: A list of dictionaries, where each dictionary represents a user record.
+        list: A list of dictionaries, where each dictionary represents a user.
     """
     connection = None
+    cursor = None
     try:
-        connection = connect_to_prodev()
+        connection = seed.connect_to_prodev()
         if not connection:
-            print("Failed to connect to the database.", file=sys.stderr)
             return
 
-        cursor = connection.cursor(dictionary=True, buffered=True)
-        cursor.execute("SELECT user_id, name, email, age FROM user_data")
+        # Use a dictionary cursor to get rows as dictionaries
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM user_data ORDER BY name;")
 
+        # This is the first loop (the main fetching loop)
         while True:
-            rows = cursor.fetchmany(size=batch_size)
-            if not rows:
+            # fetchmany() is an efficient way to get a specific number of rows
+            batch = cursor.fetchmany(batch_size)
+            
+            # If fetchmany returns an empty list, we've reached the end
+            if not batch:
                 break
-            yield rows
+            
+            # Yield the entire batch (a list of user dictionaries)
+            yield batch
 
-    except mysql.connector.Error as err:
-        print(f"Database error: {err}", file=sys.stderr)
+    except Exception as e:
+        print(f"An error occurred while streaming batches: {e}")
     finally:
-        if 'cursor' in locals() and cursor:
+        if cursor:
             cursor.close()
-        if connection:
+        if connection and connection.is_connected():
             connection.close()
 
-def batch_processing(batch_size):
+
+def batch_processing(batch_size=50):
     """
-    Processes each batch of users and filters for users over the age of 25.
+    Processes batches of users to filter and print users older than 25.
 
     Args:
-        batch_size (int): The size of each batch to process.
-    
-    Yields:
-        dict: A dictionary of a user record filtered by age.
+        batch_size (int): The size of the batches to process.
     """
-    for batch in stream_users_in_batches(batch_size):
-        for user in batch:
+    # This is the second loop (iterating over the batches yielded by the generator)
+    for user_batch in stream_users_in_batches(batch_size):
+        # This is the third loop (iterating over users within a single batch)
+        for user in user_batch:
             if user.get('age', 0) > 25:
-                yield user
-
-if __name__ == '__main__':
-    # Example usage for testing purposes
-    print("Streaming and processing users in batches...")
-    for user in batch_processing(50):
-        print(user)
+                print(user)

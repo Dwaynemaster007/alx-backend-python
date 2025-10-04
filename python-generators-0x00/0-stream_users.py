@@ -1,45 +1,46 @@
 #!/usr/bin/python3
 """
-A generator function that streams rows from a MySQL database one by one.
+This module contains a generator function that streams user data
+row by row from a MySQL database.
 """
-import mysql.connector
-from seed import connect_to_prodev
-import os
+import seed  # Import the seed module to use its connection functions
 
 def stream_users():
     """
-    Streams rows from the user_data table using a generator.
-    
-    Yields:
-        dict: A dictionary representing a single user record.
+    A generator function that connects to the ALX_prodev database
+    and yields user rows one by one.
+
+    Each row is returned as a dictionary for easy access to column data.
     """
     connection = None
+    cursor = None
     try:
-        connection = connect_to_prodev()
+        # Establish a connection to the database
+        connection = seed.connect_to_prodev()
         if not connection:
-            print("Failed to connect to the database.")
+            # If connection fails, the generator stops
             return
 
+        # Using dictionary=True makes the cursor return rows as dictionaries
+        # (e.g., {'user_id': '...', 'name': '...'}), which matches the expected output.
         cursor = connection.cursor(dictionary=True)
-        cursor.execute("SELECT user_id, name, email, age FROM user_data")
 
-        while True:
-            row = cursor.fetchone()
-            if row is None:
-                break
+        # Execute the query to fetch all users
+        cursor.execute("SELECT * FROM user_data ORDER BY name;")
+
+        # This is the single loop required by the instructions.
+        # The cursor itself is an iterator, so we can loop over it.
+        # It fetches rows from the database as needed, not all at once.
+        for row in cursor:
             yield row
-            
-    except mysql.connector.Error as err:
-        print(f"Database error: {err}")
+
+    except Exception as e:
+        print(f"An error occurred while streaming users: {e}")
     finally:
-        if 'cursor' in locals() and cursor:
+        # Ensure the cursor and connection are closed properly
+        if cursor:
             cursor.close()
-        if connection:
+        if connection and connection.is_connected():
             connection.close()
 
-if __name__ == '__main__':
-    # This block is for testing purposes only, if you need to run this file directly
-    print("Streaming users from the database...")
-    from itertools import islice
-    for user in islice(stream_users(), 6):
-        print(user)
+
