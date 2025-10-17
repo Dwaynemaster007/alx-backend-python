@@ -11,7 +11,7 @@ class ThreadedConversationView(ListAPIView):
     """
     serializer_class = MessageSerializer
     permission_classes = [permissions.IsAuthenticated]
-
+    "conversation_id", "HTTP_403_FORBIDDEN"
     def get_queryset(self):
         """
         Fetches top-level messages for a conversation and optimizes the query
