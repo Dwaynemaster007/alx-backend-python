@@ -2,14 +2,20 @@ pipeline {
     agent any
 
     environment {
-        GITHUB_CREDENTIALS = credentials('github-credentials')
-        DOCKER_CREDENTIALS = credentials('dockerhub-credentials')   // ID محفوظ داخل Jenkins
-        DOCKER_IMAGE = "your-dockerhub-username/messaging_app"      // عدّل باليوزر الخاص بك
+        // ID for your GitHub Personal Access Token/Username+Password
+        GITHUB_CREDENTIALS = 'github-credentials'
+        
+        // ID for your Docker Hub Username+Password (dwaynemaster007)
+        DOCKER_CREDENTIALS = 'dockerhub-credentials'
+        
+        // CUSTOMIZATION: Uses your Docker Hub username
+        DOCKER_IMAGE = "dwaynemaster007/messaging_app" 
     }
 
     stages {
         stage('Checkout') {
             steps {
+                // Pulls the source code from the project's repository
                 git branch: 'main',
                     credentialsId: "${GITHUB_CREDENTIALS}",
                     url: 'https://github.com/alx-backend-python.git'
@@ -18,6 +24,7 @@ pipeline {
 
         stage('Install Dependencies & Run Tests') {
             steps {
+                // Task 0: Install dependencies and run pytest
                 sh '''
                 python3 -m venv venv
                 . venv/bin/activate
@@ -27,6 +34,7 @@ pipeline {
                 '''
             }
             post {
+                // Task 0: Publish JUnit test report
                 always {
                     junit 'report.xml'
                 }
@@ -35,6 +43,8 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
+                // Task 1: Build the Docker image, tagging it with your user name
+                // Assumes Dockerfile is in the 'messaging_app' subdirectory
                 sh '''
                 docker build -t $DOCKER_IMAGE:latest messaging_app
                 '''
@@ -43,7 +53,8 @@ pipeline {
 
         stage('Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                // Task 1: Securely log in and push the image to Docker Hub
+                withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
                     echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                     docker push $DOCKER_IMAGE:latest
