@@ -31,62 +31,36 @@ This repository represents a complete journey through **advanced Python backend 
 
 ```
 alx-backend-python/
-├── python-generators-0x00/          # Memory-efficient data streaming
-├── python-decorators-0x01/          # Function wrappers and metaprogramming
-├── python-context-async-perations-0x02/  # Async/await patterns
-├── Django-Middleware-0x03/          # Custom middleware implementation
-├── Django-signals_orm-0x04/         # ORM event handling
-├── messaging_app/                   # Kubernetes-orchestrated Django app
-│   ├── kurbeScript                  # Cluster setup script
-│   ├── deployment.yaml              # K8s deployment config
-│   ├── blue_deployment.yaml         # Blue-green deployment
-│   ├── green_deployment.yaml        # Green version deployment
-│   ├── kubeservice.yaml             # Service configuration
-│   ├── ingress.yaml                 # Ingress controller config
-│   ├── kubctl-0x01                  # Scaling script
-│   ├── kubctl-0x02                  # Blue-green deployment script
-│   └── kubctl-0x03                  # Rolling update script
-├── 0x03-Unittests_and_integration_tests/  # Testing strategies
-├── venv/                            # Python virtual environment
-├── .gitignore                       # Git ignore rules
-├── manage                           # Django management script
-├── settings                         # Configuration settings
-└── README.md                        # This file
+├── python-generators-0x00/               # Streaming MySQL rows with generators (+ user_data.csv sample)
+├── python-decorators-0x01/               # Logging, connection, transaction, retry and cache decorators
+├── python-context-async-perations-0x02/  # Context managers and concurrent queries with asyncio
+├── 0x03-Unittests_and_integration_tests/ # unittest, parameterized and mock
+├── messaging_app/                        # Django REST messaging API (JWT) + Docker, Jenkins and Kubernetes
+├── Django-Middleware-0x03/               # The messaging API with custom middleware
+└── Django-signals_orm-0x04/              # Signals, custom ORM managers, threaded replies and caching
 ```
 
 ---
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
-Ensure you have the following installed:
-
-- **Python 3.9+**
-- **MySQL 8.0+**
-- **Docker** & **Docker Compose**
-- **Minikube** (for Kubernetes)
-- **kubectl** (Kubernetes CLI)
-- **Git**
-
-### Installation
+**You need:** Python 3.10+. MySQL or MariaDB for the generator project. Docker and Minikube for the deployment tasks.
 
 ```bash
-# Clone the repository
 git clone https://github.com/Dwaynemaster007/alx-backend-python.git
 cd alx-backend-python
-
-# Set up virtual environment
-python3 -m venv venv
-source venv/bin/activate  # Linux/macOS
-# venv\Scripts\activate   # Windows
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Set up database (for generator projects)
-python seed.py
+python3 -m venv venv && source venv/bin/activate   # Windows: venv\Scripts\activate
 ```
+
+Each project installs and runs on its own:
+
+| Project | Set up | Run |
+| --- | --- | --- |
+| Generators | `pip install mysql-connector-python`, then set `DB_USER` and `DB_PASSWORD` | `python3 -c "import seed; c=seed.connect_db(); seed.create_database(c); c=seed.connect_to_prodev(); seed.create_table(c); seed.insert_data(c, 'user_data.csv')"`, then `python3 4-stream_ages.py` |
+| Decorators | `python3 setup_db.py` (creates `users.db`) | `python3 0-log_queries.py` … `4-cache_query.py` |
+| Context managers & async | `pip install aiosqlite` and `python3 setup_db.py` (creates `task_database.db`) | `python3 0-databaseconnection.py`, `1-execute.py`, `3-concurrent.py` |
+| Unit tests | `pip install parameterized requests` | `python3 -m unittest test_utils test_client` |
+| messaging_app, Middleware, Signals | `pip install -r requirements.txt` (Signals: `pip install django djangorestframework`) | `python manage.py migrate && python manage.py runserver`; tests: `python manage.py test` |
 
 ---
 
@@ -94,102 +68,66 @@ python seed.py
 
 ### 🔄 1. Python Generators (python-generators-0x00)
 
-**Master memory-efficient data processing with Python generators.**
-
-#### Key Features:
-- Stream database rows one-by-one using `yield`
-- Batch processing for large datasets
-- Lazy pagination implementation
-- Aggregate computations without loading full datasets
-
-#### Core Files:
-- `seed.py` - Database setup and population
-- `0-stream_users.py` - Stream users from database
-- `1-batch_processing.py` - Process data in batches
-- `2-lazy_paginate.py` - Lazy loading pagination
-- `4-stream_ages.py` - Memory-efficient aggregate functions
-
-#### Learning Outcomes:
-✅ Understand generator functions and `yield` keyword  
-✅ Implement lazy evaluation for scalability  
-✅ Handle large datasets without memory overflow  
-✅ Build efficient database streaming solutions
-
----
+- `seed.py`: creates the `ALX_prodev` MySQL database and `user_data` table, then loads `user_data.csv` (ids are generated if the CSV has none)
+- `0-stream_users.py`: yields one row at a time
+- `1-batch_processing.py`: yields batches and keeps users over 25
+- `2-lazy_paginate.py`: fetches the next page only when it's needed
+- `4-stream_ages.py`: average age without loading every row into memory
 
 ### 🎨 2. Python Decorators (python-decorators-0x01)
 
-**Enhance functions with decorator patterns and metaprogramming.**
+- `log_queries`: prints each SQL query with a timestamp
+- `with_db_connection`: opens and closes the connection for you
+- `transactional`: commits on success, rolls back on error
+- `retry_on_failure(retries, delay)`: retries transient failures
+- `cache_query`: caches results by query string
 
-#### Key Concepts:
-- Function wrappers and closures
-- Class-based decorators
-- Decorator chaining
-- Property decorators and descriptors
+### ⚡ 3. Context Managers & Async (python-context-async-perations-0x02)
 
-#### Learning Outcomes:
-✅ Create reusable function enhancers  
-✅ Implement authentication decorators  
-✅ Build logging and timing wrappers  
-✅ Master Python metaprogramming patterns
+- `DatabaseConnection`: a class-based context manager that closes the connection
+- `ExecuteQuery`: a context manager that runs a parameterised query
+- `3-concurrent.py`: runs two `aiosqlite` queries at once with `asyncio.gather`
 
----
+### 💬 4. Messaging API (messaging_app/)
 
-### ⚡ 3. Async Programming (python-context-async-perations-0x02)
+A Django REST Framework API for conversations and messages.
 
-**Build concurrent applications with async/await patterns.**
+- JWT login (`/api/auth/login/`), plus register, refresh and profile endpoints
+- `/api/conversations/` and nested `/api/conversations/<id>/messages/`, with pagination, filtering and search
+- Only participants can see or post in a conversation, and only the sender can edit a message
+- Uses SQLite locally and MySQL under `docker compose up` (copy `.env.example` to `.env` first)
 
-#### Key Features:
-- Asynchronous context managers
-- Non-blocking I/O operations
-- Concurrent API calls
-- Event loop management
+### 🛡️ 5. Django Middleware (Django-Middleware-0x03)
 
-#### Learning Outcomes:
-✅ Write async functions with `async/await`  
-✅ Implement context managers with `async with`  
-✅ Handle concurrent operations efficiently  
-✅ Optimize I/O-bound tasks
+The messaging API plus four middleware classes in `chats/middleware.py`:
 
----
+| Middleware | What it does |
+| --- | --- |
+| `RequestLoggingMiddleware` | Writes `timestamp - User - Path` for every request to `requests.log` |
+| `RestrictAccessByTimeMiddleware` | Returns 403 for `/api/` outside 9 AM to 6 PM (`CHAT_OPEN_HOUR` and `CHAT_CLOSE_HOUR`) |
+| `OffensiveLanguageMiddleware` | Rate limit: 5 messages per minute per IP, then 429 |
+| `RolepermissionMiddleware` | Only admin and moderator users can open `/admin/` |
 
-### 🛡️ 4. Django Middleware (Django-Middleware-0x03)
+### 📡 6. Django Signals, ORM & Caching (Django-signals_orm-0x04)
 
-**Implement custom request/response processing pipelines.**
+- `post_save`: notifies the receiver of a new message
+- `pre_save`: saves the old content to `MessageHistory` when a message is edited
+- `post_delete` on `User`: cleans up a deleted user's messages, notifications and history
+- `Message.unread.unread_for_user(user)`: a custom manager, queried with `.only()`
+- Threaded replies through `parent_message`, loaded with `select_related` and `prefetch_related`
+- `cache_page(60)` on the conversation view and the message list
 
-#### Key Features:
-- Custom middleware classes
-- Request preprocessing
-- Response modification
-- Authentication middleware
-
-#### Learning Outcomes:
-✅ Understand Django middleware lifecycle  
-✅ Create custom middleware components  
-✅ Implement cross-cutting concerns  
-✅ Build authentication and logging middleware
-
----
-
-### 📡 5. Django ORM Signals (Django-signals_orm-0x04)
-
-**Build event-driven database operations with Django signals.**
-
-#### Key Features:
-- Pre-save and post-save signals
-- Database event handling
-- Decoupled application logic
-- Signal receivers
-
-#### Learning Outcomes:
-✅ Implement Django signal handlers  
-✅ Create event-driven architectures  
-✅ Decouple business logic  
-✅ Build auditing and logging systems
+| Endpoint | Description |
+| --- | --- |
+| `GET` `POST` `/api/thread/` | Your conversations with nested replies; send a message or reply |
+| `GET` `PATCH` `/api/messages/<id>/` | Edit history; edit your own message |
+| `GET` `/api/messages/unread/` | Unread messages |
+| `GET` `/api/conversations/<user_id>/` | Cached conversation with one user |
+| `DELETE` `/api/users/delete/` | Delete your account |
 
 ---
 
-### 🐳 6. Container Orchestration with Kubernetes (messaging_app/)
+### 🐳 7. Container Orchestration with Kubernetes (messaging_app/)
 
 **Deploy and manage containerized Django applications at scale.**
 
@@ -281,7 +219,7 @@ kubectl apply -f ingress.yaml
 
 ---
 
-### 🧪 7. Unit Tests & Integration Tests (0x03-Unittests_and_integration_tests/)
+### 🧪 8. Unit Tests & Integration Tests (0x03-Unittests_and_integration_tests/)
 
 **Comprehensive testing strategies for robust applications.**
 
@@ -294,16 +232,6 @@ kubectl apply -f ingress.yaml
 ---
 
 ## 🛠️ Common Commands
-
-### Python Virtual Environment
-```bash
-# Activate virtual environment
-source venv/bin/activate  # Linux/macOS
-venv\Scripts\activate     # Windows
-
-# Deactivate
-deactivate
-```
 
 ### Django Commands
 ```bash
@@ -443,7 +371,7 @@ This project is part of the **ALX Backend Web Pro-Development Curriculum**.
 *Building scalable backend systems, one line at a time* 🚀✨
 
 [![GitHub](https://img.shields.io/badge/GitHub-Dwaynemaster007-181717?style=for-the-badge&logo=github)](https://github.com/Dwaynemaster007)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0077B5?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/dwaynemaster007)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0077B5?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/thubelihledlamini)
 
 ---
 

@@ -3,9 +3,11 @@
 This script provides functions to set up and seed a MySQL database
 for the ALX ProDev Python Generators project.
 """
-import mysql.connector
-import os
 import csv
+import os
+import uuid
+
+import mysql.connector
 
 def connect_db():
     """Connects to the MySQL database server."""
@@ -78,13 +80,14 @@ def insert_data(connection, data):
             return
 
         with open(data, 'r', newline='', encoding='utf-8') as csvfile:
-            reader = csv.reader(csvfile)
-            header = next(reader)  # Skip the header row
+            # Works with name,email,age files (ids are generated) and user_id,name,email,age files
+            reader = csv.DictReader(csvfile)
             sql = "INSERT INTO user_data (user_id, name, email, age) VALUES (%s, %s, %s, %s)"
-            
-            # The csv reader gives strings, so we convert age to int
-            data_to_insert = [(row[0], row[1], row[2], int(row[3])) for row in reader]
-            
+            data_to_insert = [
+                (row.get('user_id') or str(uuid.uuid4()), row['name'], row['email'], int(float(row['age'])))
+                for row in reader
+            ]
+
             cursor.executemany(sql, data_to_insert)
             connection.commit()
             print(f"{cursor.rowcount} records inserted successfully.")

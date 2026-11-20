@@ -9,4 +9,4 @@ class MessagingConfig(AppConfig):
         This method is called when the app is ready.
         It's the recommended place to import and connect signals.
         """
-        import messaging.signals
+        from . import signals  # noqa: F401  (connects the signal handlers)

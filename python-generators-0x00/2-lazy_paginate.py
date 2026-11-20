@@ -23,7 +23,8 @@ def paginate_users(page_size: int, offset: int) -> list:
         if connection:
             cursor = connection.cursor(dictionary=True)
             # The checker is looking for this exact SQL string.
-            query = f"SELECT * FROM user_data LIMIT {page_size} OFFSET {offset}"
+            # int() keeps the values numeric, so nothing else can end up in the SQL
+            query = f"SELECT * FROM user_data LIMIT {int(page_size)} OFFSET {int(offset)}"
             cursor.execute(query)
             rows = cursor.fetchall()
             cursor.close()

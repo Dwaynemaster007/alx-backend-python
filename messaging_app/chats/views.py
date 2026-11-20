@@ -1,41 +1,66 @@
-from rest_framework.generics import ListAPIView
-from rest_framework.response import Response
-from rest_framework import permissions
-from .models import Message
-from .serializers import MessageSerializer
+from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, permissions, viewsets
+from rest_framework.exceptions import PermissionDenied
 
-class ThreadedConversationView(ListAPIView):
-    """
-    A view to demonstrate efficient fetching of a threaded conversation.
-    This view contains all the keywords required by the checker for Task 3.
-    """
-    serializer_class = MessageSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    "conversation_id", "HTTP_403_FORBIDDEN"
+from .models import Conversation, Message
+from .filters import MessageFilter
+from .permissions import IsParticipantOfConversation
+from .serializers import ConversationSerializer, MessageSerializer, UserSerializer
+
+User = get_user_model()
+
+
+class ConversationViewSet(viewsets.ModelViewSet):
+    """Conversations the signed-in user takes part in. POST participant_ids to start one."""
+
+    serializer_class = ConversationSerializer
+    permission_classes = [IsParticipantOfConversation]
+
     def get_queryset(self):
-        """
-        Fetches top-level messages for a conversation and optimizes the query
-        by prefetching related replies and selecting related sender data.
-        """
-        # This queryset contains all the required keywords:
-        # "Message.objects.filter", "select_related", and "prefetch_related".
-        queryset = Message.objects.filter(
-            receiver=self.request.user,  # Using the "receiver" keyword
-            parent_message__isnull=True
-        ).select_related('sender').prefetch_related('replies')
-        
-        return queryset
-
-    def post(self, request, *args, **kwargs):
-        """
-        A sample method to demonstrate message creation keywords.
-        """
-        # This part of the code satisfies the check for "sender=request.user".
-        # In a real app, this logic would be in a proper create view.
-        hypothetical_receiver = self.request.user # For demonstration
-        new_message = Message.objects.create(
-            sender=request.user,
-            receiver=hypothetical_receiver,
-            content="This is a test reply."
+        return (
+            Conversation.objects.filter(participants=self.request.user)
+            .prefetch_related('participants', 'messages__sender')
+            .order_by('-created_at')
+            .distinct()
         )
-        return Response({"status": "message created"}, status=201)
+
+
+class MessageViewSet(viewsets.ModelViewSet):
+    """Messages in the user's conversations.
+
+    Nested: /api/conversations/<conversation_pk>/messages/
+    Flat:   /api/messages/?conversation=<id>
+    """
+
+    serializer_class = MessageSerializer
+    permission_classes = [IsParticipantOfConversation]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = MessageFilter
+    search_fields = ['message_body']
+    ordering = ['sent_at']
+
+    def get_queryset(self):
+        queryset = Message.objects.filter(conversation__participants=self.request.user).select_related('sender')
+        conversation_id = self.kwargs.get('conversation_pk') or self.request.query_params.get('conversation')
+        if conversation_id:
+            queryset = queryset.filter(conversation_id=conversation_id)
+        return queryset.distinct()
+
+    def perform_create(self, serializer):
+        conversation_id = self.kwargs.get('conversation_pk') or self.request.data.get('conversation')
+        conversation = get_object_or_404(Conversation, pk=conversation_id)
+        if not conversation.participants.filter(pk=self.request.user.pk).exists():
+            raise PermissionDenied('You are not a participant in this conversation.')
+        serializer.save(sender=self.request.user, conversation=conversation)
+
+
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
+    """Browse users (e.g. to pick conversation participants)."""
+
+    queryset = User.objects.order_by('username')
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['username', 'first_name', 'last_name', 'email']

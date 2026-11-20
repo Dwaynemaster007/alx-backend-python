@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Conversation, Message
+from .models import Conversation, Message
 from django.contrib.auth import get_user_model
 
 # Get the custom User model
@@ -35,7 +35,8 @@ class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
         fields = ['id', 'conversation', 'sender', 'sender_username', 'message_body', 'sent_at']
-        read_only_fields = ['sender'] # The sender is set from the authenticated user.
+        # The sender and conversation are set by the view
+        read_only_fields = ['sender', 'conversation']
 
 
 class ConversationSerializer(serializers.ModelSerializer):
@@ -93,3 +94,18 @@ class ConversationSerializer(serializers.ModelSerializer):
         conversation.participants.set(all_participants)
         
         return conversation
+
+
+class RegisterSerializer(serializers.ModelSerializer):
+    """Creates a user with a hashed password."""
+
+    password = serializers.CharField(write_only=True, min_length=8)
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone_number', 'role', 'password']
+        read_only_fields = ['id']
+
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        return User.objects.create_user(password=password, **validated_data)
